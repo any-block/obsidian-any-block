@@ -1,0 +1,5 @@
+
+User-agent:*
+Disallow:
+
+Sitemap: https://any-block.github.io/obsidian-any-block/sitemap.xml
