@@ -30,7 +30,7 @@ const abc_list2ActivityDiagramText = ABConvert.factory({
 	process_param: ABConvert_IOEnum.text,
 	process_return: ABConvert_IOEnum.text,
 	process: (el, header, content: string): string => {
-		return list2ActivityDiagramText(ListProcess.list2data(content))
+		return list2ActivityDiagramText(ListProcess.data2strict(ListProcess.list2data(content)))
 	}
 })
 
@@ -40,7 +40,7 @@ const abc_list2ActivityDiagram = ABConvert.factory({
 	process_param: ABConvert_IOEnum.text,
 	process_return: ABConvert_IOEnum.el,
 	process: (el, header, content: string): HTMLElement => {
-		const puml = list2ActivityDiagramText(ListProcess.list2data(content))
+		const puml = list2ActivityDiagramText(ListProcess.data2strict(ListProcess.list2data(content)))
 		render_pumlText(puml, el)
 		return el
 	}
@@ -109,8 +109,13 @@ async function render_pumlText(text: string, div: HTMLElement) {
 
 function list2ActivityDiagramText(listdata: List_ListItem): string {
   let result = "@startuml\n";
-  result += "start\n";
   const {result: bodyResult} = processBody(listdata, 0, -1);
+  const swimLanes = bodyResult.split("\n").filter(line => line.startsWith("|") && line.endsWith("|"));
+  if (swimLanes.length > 0) {
+    result += swimLanes.join("\n");
+	result += "\n";
+  }
+  result += "start\n";
   result += bodyResult;
   result += "end\n";
   result += "@enduml";
@@ -168,7 +173,7 @@ function processBody(listdata: List_ListItem, startIndex: number, parentLevel: n
       continue;
     }
     
-    if (isSwimLane(content)) {
+    if (content.startsWith("lane:")) {
       result += processSwimLane(content);
       i++;
       continue;
@@ -189,11 +194,6 @@ function isReservedWord(content: string): boolean {
          content === "detach" || content === "break" || content === "end" || 
          content === "fork" || content === "fork again" || content === "end fork" || 
          content === "end merge";
-}
-
-// 判断是否为泳道
-function isSwimLane(content: string): boolean {
-  return content.startsWith("|") && content.endsWith("|");
 }
 
 // 处理if语句
@@ -218,9 +218,9 @@ function processIfStatement(listdata: List_ListItem, index: number, level: numbe
 	while (nextIndex < listdata.length && listdata[nextIndex].level === level + 1 && listdata[nextIndex].content.trim() !== "") {
 		const branch1Tag = listdata[nextIndex].content.trim();
 		if (branch1Tag.length !== 0) {
-			result += `else if(${branch1Tag}) then (yes)`
+			result += `else if(${branch1Tag}) then (yes)\n`
 		}else{
-			result += `else`
+			result += `else\n`
 		}
 		const {result: result2, nextIndex: nextIndex2} = processBody(listdata, nextIndex + 1, level + 1)
 		result += result2
@@ -269,7 +269,7 @@ function processWhileStatement(listdata: List_ListItem, index: number, level: nu
   result += indentContent(bodyResult);
   nextIndex = bodyNextIndex;
   
-  result += "endwhile (false)\n";
+  result += "endwhile\n";
   return { result, nextIndex };
 }
 
@@ -307,7 +307,7 @@ function processPartitionStatement(listdata: List_ListItem, index: number, level
 
 // 处理swim lane
 function processSwimLane(content: string): string {
-  const laneName = content.substring(1, content.length - 1).trim();
+  const laneName = content.substring(5, content.length).trim();
   return "|" + laneName + "|\n";
 }
 
