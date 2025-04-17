@@ -122,7 +122,7 @@ export class ListProcess{
   }
 
   /**
-   * listStrgam结构 转 树型结构
+   * listStream结构 转 树型结构
    * 
    * @detail
    * 与list2data不同，这里仅识别 `: ` 作为分割符
